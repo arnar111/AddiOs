@@ -43,12 +43,24 @@ Arch Wiki er aðal heimildin og **alltaf á að fletta þar fyrst** ef eitthvað
 | BIOS | Aptio V (Visual BIOS), family `BECFL357` |
 | Aflgjafi | 19V DC, 90W external |
 
-**Þarf enn að staðfesta á vélinni (sjá Fasa 0):**
-- RAM: stærð og uppstilling (1 vs 2 stafir)
-- Storage: M.2 NVMe stærð, og hvort 2.5" bay er notuð
-- BIOS útgáfa á vélinni núna
+**Staðfest á vélinni (maí 2026):**
+- **RAM:** 8 GB DDR4-2400 (uppstilling óstaðfest — staðfestum eftir uppsetningu með `sudo dmidecode -t memory`. Dual-channel 2×4 er ~2× hraðari grafík en single-channel 1×8 á Iris Plus 655.)
+- **Storage:** Kingston A400 SATA SSD, 120 GB nominal / **112 GB usable** (`SA400S37/120G`). Eini diskurinn — engin NVMe.
+- **BIOS útgáfa:** Skráð í Fasa 0.
 
 **Linux samhæfni:** Allt studd af opnum drivers í mainline kernel — `i915` (GPU), `iwlwifi` (Wi-Fi), `e1000e` (ethernet), `snd_hda_intel` (audio). Engin proprietary firmware vandamál.
+
+### Áhrif takmarkana á áætlun
+
+8 GB RAM og 120 GB SSD eru **á neðri mörkum** þess sem Plasma 6 + KDE apps + dev tools þurfa. Áætlunin var aðlöguð:
+
+- **zram** (compressed in-memory swap) sjálfgefið — hraðar en disk swap, minnkar SSD slit
+- **Btrfs `compress=zstd:1`** — sparar 30–50% disk space, lítill CPU kostnaður
+- **Snapper conservative retention** — 5 hourly / 7 daily / 4 weekly / 0 monthly
+- **Baloo (KDE file indexer) slökkt sjálfgefið** — sparar RAM og IO; má virkja seinna
+- **`fstrim.timer` virkjað** — viðheldur SSD performance
+- **Swapfile 4 GB** (auk zram) — ef síðar verður óskað eftir hibernate
+- **Engin separate `/home` partition** — sett upp sem Btrfs subvolume á sama partition; sveigjanlegri og notar allt rýmið
 
 ---
 
@@ -398,10 +410,29 @@ KDE specific dotfiles sem fara í git:
 
 | # | Atriði | Ákvörðun | Rökstuðningur |
 |---|--------|----------|---------------|
-| 11 | Filesystem | **Btrfs** | Snapshots → "rúlla til baka" virkni er ómetanleg fyrir rolling release |
-| 12 | Swap | **Swapfile á Btrfs** | Sveigjanlegri en partition; getur stækkað/minnkað seinna |
+| 11 | Filesystem | **Btrfs með `compress=zstd:1`** | Snapshots + 30–50% diskpláss sparnaður á 120 GB SSD |
+| 12 | Swap | **`zram` (RAM-byggt) + 4 GB swapfile á Btrfs** | zram fyrir hraða og minni SSD slit; swapfile fyrir hibernate ef vill seinna |
 | 13 | LUKS encryption | **Sleppt í fyrstu** | Bætir flækjustigi við boot fyrir byrjanda. Hægt að bæta við seinna með nýrri uppsetningu ef vill |
 | 14 | Secure Boot | **Disabled fyrst, virkjað seinna** | Notandi sagði að virkja á eftir; sett upp `sbctl` í Fasa 2 til undirbúnings |
+
+### Partition skipulag fyrir 120 GB Kingston A400
+
+```
+/dev/sda                 (eða /dev/nvme0n1 ef á M.2)
+├─ /dev/sdaX  EFI    1 GB    FAT32   →  /boot
+└─ /dev/sdaY  root   ~111 GB Btrfs   →  /  (subvolumes hér að neðan)
+```
+
+**Btrfs subvolumes** (öll á sömu partition):
+
+| Subvolume | Mount | Snapshots? | Notes |
+|-----------|-------|------------|-------|
+| `@` | `/` | já | aðal rót |
+| `@home` | `/home` | já | notandagögn |
+| `@snapshots` | `/.snapshots` | n/a | snapshots geymdir hér |
+| `@var_log` | `/var/log` | nei (`nodatacow`) | logs sleppa snapshots |
+| `@var_cache` | `/var/cache` | nei | pacman cache, browser cache |
+| `@swap` | `/swap` | nei (`nodatacow`) | swapfile býr hér |
 
 ### Desktop og forrit
 
