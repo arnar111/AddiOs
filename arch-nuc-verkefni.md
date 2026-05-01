@@ -26,19 +26,29 @@ Arch Wiki er aðal heimildin og **alltaf á að fletta þar fyrst** ef eitthvað
 
 ---
 
-## Vélbúnaður (staðfest með leit)
+## Vélbúnaður — staðfest fyrir þessa vél
 
-| Hluti | Gildi |
-|-------|-------|
-| CPU | Intel Coffee Lake (i3-8109U / i5-8259U / i7-8559U — fer eftir útgáfu) |
-| GPU | Intel Iris Plus Graphics 655 (integrated, 128 MB eDRAM) |
-| RAM hámark | 32 GB DDR4-2400 SO-DIMM (2 raufar) |
-| Geymsla | M.2 NVMe slot + 2.5" SATA bay |
-| Wi-Fi | Intel Wireless-AC 9260 |
-| Útgangar | HDMI 2.0a, Thunderbolt 3, 4× USB 3.1 Type-A |
-| BIOS | UEFI (Visual BIOS) |
+**Vörunúmer:** `BOXNUC8i3BEH2` (Bean Canyon, revision 03/2019, BOX = barebones)
 
-**Linux samhæfni:** Allt þetta er studd af opnum drivers í Linux kernel. `i915` fyrir GPU, `iwlwifi` fyrir Wi-Fi. Engin proprietary firmware vandamál.
+| Hluti | Staðfest gildi |
+|-------|----------------|
+| CPU | Intel Core **i3-8109U** (Coffee Lake, 2C/4T, 3.0 GHz base / 3.6 GHz turbo, 4 MB L3, 28 W TDP) |
+| GPU | Intel Iris Plus Graphics 655 (integrated, 128 MB eDRAM, HDMI 2.0a 4K@60) |
+| RAM slots | 2× DDR4-2400 SO-DIMM, hámark 32 GB *(BOX útgáfa kemur tóm)* |
+| Geymsla | 1× M.2 22×80 (NVMe/SATA) + 1× 2.5" SATA bay *(BOX útgáfa kemur tóm)* |
+| Wi-Fi | Intel Wireless-AC **9560** (CNVi, Wi-Fi 5, BT 5.0) |
+| Ethernet | Intel i219-V Gigabit |
+| Útgangar | HDMI 2.0a, Thunderbolt 3 (USB-C, DP 1.2), 4× USB 3.1 Gen 2 Type-A, microSDXC |
+| Hljóð | 7.1 yfir HDMI/TB3, 3.5mm combo jack að framan |
+| BIOS | Aptio V (Visual BIOS), family `BECFL357` |
+| Aflgjafi | 19V DC, 90W external |
+
+**Þarf enn að staðfesta á vélinni (sjá Fasa 0):**
+- RAM: stærð og uppstilling (1 vs 2 stafir)
+- Storage: M.2 NVMe stærð, og hvort 2.5" bay er notuð
+- BIOS útgáfa á vélinni núna
+
+**Linux samhæfni:** Allt studd af opnum drivers í mainline kernel — `i915` (GPU), `iwlwifi` (Wi-Fi), `e1000e` (ethernet), `snd_hda_intel` (audio). Engin proprietary firmware vandamál.
 
 ---
 
@@ -366,3 +376,69 @@ KDE specific dotfiles sem fara í git:
 - **NUC8BEH er 8 ára vélbúnaður (2018).** Intel hefur hætt opinberum BIOS uppfærslum, en ASUS hefur tekið yfir línuna og gefur enn út uppfærslur fyrir suma NUC. Athuga ASUS support síðu.
 - **VS Code úr AUR uppfærist með `yay`, ekki `pacman`.** Notandi þarf að keyra `yay -Syu` reglulega til viðbótar `pacman -Syu`.
 - **Claude Design er research preview** og krefst Pro/Max/Team/Enterprise áskriftar. Ef notandi hefur ekki aðgang þarf að nota varaleið (t.d. handvirkar Plasma stillingar í gegnum System Settings GUI).
+
+---
+
+## Staðfestar ákvarðanir notanda (maí 2026)
+
+Þessi kafli skráir svör notanda við spurningunum að ofan og þær ákvarðanir sem Claude Code tók fyrir hönd notanda þegar beðinn var um að ráða.
+
+### Net og uppsetning
+
+| # | Atriði | Ákvörðun |
+|---|--------|----------|
+| 5 | Tenging við uppsetningu | **Wi-Fi** (notum `iwctl` í installer) |
+| 6 | Hostname | **AddiOS** |
+| 7 | Notandanafn | **arnar** |
+| 8 | Tímabelti | **Atlantic/Reykjavik** |
+| 9 | Aðal locale | **en_US.UTF-8** (með `is_IS.UTF-8` einnig virku) |
+| 10 | Lyklaborð | **Íslenskt** (`is-latin1` í console, `is` í Plasma) |
+
+### Disk og öryggi (Claude Code valdi)
+
+| # | Atriði | Ákvörðun | Rökstuðningur |
+|---|--------|----------|---------------|
+| 11 | Filesystem | **Btrfs** | Snapshots → "rúlla til baka" virkni er ómetanleg fyrir rolling release |
+| 12 | Swap | **Swapfile á Btrfs** | Sveigjanlegri en partition; getur stækkað/minnkað seinna |
+| 13 | LUKS encryption | **Sleppt í fyrstu** | Bætir flækjustigi við boot fyrir byrjanda. Hægt að bæta við seinna með nýrri uppsetningu ef vill |
+| 14 | Secure Boot | **Disabled fyrst, virkjað seinna** | Notandi sagði að virkja á eftir; sett upp `sbctl` í Fasa 2 til undirbúnings |
+
+### Desktop og forrit
+
+| # | Atriði | Ákvörðun | Rökstuðningur |
+|---|--------|----------|---------------|
+| 15 | KDE pakkasett | **`plasma-meta`** | Full Plasma desktop |
+| 16 | KDE applications | **`kde-applications-meta`** | Notandi vill „allt bara, einfaldara fyrir byrjendur" |
+| 17 | Display manager | **Plasma Login Manager** | Notandi valdi nýrra alternatífið |
+| 18 | VS Code útgáfa | **`visual-studio-code-bin`** (úr AUR) | Full Microsoft útgáfa, MS Remote-SSH virkar, telemetri má slökkva á |
+| 19 | AUR helper | **`yay`** | Vinsælasta, vel viðhaldið, einfalt API |
+| 20 | Shell | **bash** | Notandi „more familiar" |
+| 21 | Terminal emulator | **`kitty`** + tóladekúr fyrir bash (sjá að neðan) | GPU-accelerated, ligature support, fallegt og hratt |
+
+### Bash með litkóðun (skv. ósk notanda)
+
+Til að bash skipanir séu litkóðaðar á svipaðan hátt og í zsh:
+
+| Tól | Hlutverk | Heimild |
+|-----|----------|---------|
+| **`ble.sh`** | Bash Line Editor — bætir syntax highlighting og autosuggestions við bash | AUR: `blesh-git` |
+| **`starship`** | Cross-shell prompt með git status, þemum, hraður | pacman: `starship` |
+| **`eza`** | Litríkur `ls` afleysing | pacman: `eza` |
+| **`bat`** | `cat` með syntax highlighting og line numbers | pacman: `bat` |
+| **`fzf`** | Fuzzy finder (Ctrl-R history search, file search) | pacman: `fzf` |
+| **`ripgrep`** (`rg`) | Fljótari `grep` með litum | pacman: `ripgrep` |
+| **`zoxide`** | Snjall `cd` afleysing sem man möppur sem þú heimsækir oft | pacman: `zoxide` |
+
+Sett upp í Fasa 2 og stillt í Fasa 3.
+
+### Spurningar 22–29 (UI hönnun)
+
+Frestað þar til notandi opnar Claude Design fyrir Fasa 3.
+
+---
+
+## Næstu skref
+
+1. **Fasi 0** — sjá [`fasi-0-undirbuningur.md`](./fasi-0-undirbuningur.md) fyrir skref-fyrir-skref leiðbeiningar
+2. **Áður en Fasi 1 hefst** — staðfesta RAM stærð, M.2 NVMe stærð, og hvort 2.5" SATA bay sé notuð
+3. **Fasi 1** — Claude Code aðstoðar í terminal þegar notandi er kominn að root prompt á Arch live USB
